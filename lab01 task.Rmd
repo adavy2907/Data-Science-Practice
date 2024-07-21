@@ -1,0 +1,141 @@
+---
+title: 'Lab 1: Wikipedia searches'
+author: "Andy Davy"
+date: "Stat 369"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+events.df = read_csv("events_log.csv")
+events.df |> print()
+```
+
+Tidying:
+
+```{r}
+
+
+```
+
+
+Task 1:
+
+```{r}
+total.unique.sessions <- unique(events.df[["session_id"]]) # finding total unique sessions
+print(length(total.unique.sessions))
+
+page.visits.df <- events.df |> select(session_id, action, group) |> filter(action == "visitPage") # filtering sessions to only include those who visit pages
+
+unique.visit.pages <- unique(page.visits.df[["session_id"]]) # finding number of sessions which had at least one page visit
+print(length(unique.visit.pages))
+
+total.clickthrough.rate <- (length(unique.visit.pages) / length(total.unique.sessions)) |> print()
+
+```
+
+So total click through rate is approx. 38.9%
+
+
+Task 2:
+
+```{r}
+
+a.events.df <- events.df |> filter(group == "a")
+
+total.unique.sessions <- unique(a.events.df[["session_id"]])
+
+
+a.page.visits.df <- a.events.df |> select(session_id, action, group) |> filter(action == "visitPage")
+
+unique.visit.pages <- unique(a.page.visits.df[["session_id"]]) # finding number of sessions which had at least one page visit
+
+
+total.clickthrough.rate <- (length(unique.visit.pages) / length(total.unique.sessions)) |> print()
+
+
+
+
+
+b.events.df <- events.df |> filter(group == "b")
+
+total.unique.sessions <- unique(b.events.df[["session_id"]])
+
+
+b.page.visits.df <- b.events.df |> select(session_id, action, group) |> filter(action == "visitPage")
+
+unique.visit.pages <- unique(b.page.visits.df[["session_id"]]) # finding number of sessions which had at least one page visit
+
+
+total.clickthrough.rate <- (length(unique.visit.pages) / length(total.unique.sessions)) |> print()
+
+```
+
+Click through rate of group A is ~ 67.0%, B is ~ 17.4%
+
+Task 3:
+
+```{r}
+
+# Separating by day
+
+events.df$timestamp <- as.character(events.df$timestamp)
+
+events.df <- events.df |> mutate(date = substr(timestamp, 1, 8))
+
+
+events.df$date <- as.Date(events.df$date, "%Y%m%d")
+
+events.df$day <- weekdays(as.Date(events.df$date))
+
+head(events.df)
+
+```
+
+Now that I've separated by day, I'm not sure how to efficiently compare the days rather than do what I did for the groups and make
+new data frames.
+
+After some googling I've come up with this:
+
+```{r}
+
+# removing NAs
+
+events.df <- events.df |> arrange(date) |> fill(day)
+
+
+calculate_ctr <- function(df) {
+
+  total.unique.sessions <- unique(df[["session_id"]])
+
+  page.visits.df <- df |> filter(action == "visitPage")
+
+  unique.visit.pages <- unique(page.visits.df[["session_id"]]) # finding number of sessions which had at least one page visit
+
+  ctr <- (length(unique.visit.pages) / length(total.unique.sessions))
+  
+  return(ctr)
+}
+
+ctr.day <- events.df |> group_by(day) |> summarise(ctr = calculate_ctr(pick(everything())))
+
+
+ctr.group.day <- events.df |> group_by(group, day) |> summarise(ctr = calculate_ctr(pick(everything())))
+
+
+print(ctr.day)
+
+print(ctr.group.day)
+
+
+```
+Beautiful!
+
+Must remove NAs.
+
+All done.
+
